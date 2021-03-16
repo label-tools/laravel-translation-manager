@@ -1,5 +1,5 @@
 {
-  "name": "barryvdh/laravel-translation-manager",
+  "name": "label-tools/laravel-translation-manager",
   "description": "Manage Laravel Translations",
   "keywords": [
     "laravel",
@@ -11,6 +11,10 @@
     {
       "name": "Barry vd. Heuvel",
       "email": "barryvdh@gmail.com"
+    },
+    {
+      "name": "Julian Castaneda",
+      "email": "juliancc@gmail.com"
     }
   ],
   "require": {
