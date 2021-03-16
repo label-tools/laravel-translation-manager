@@ -200,7 +200,6 @@ class Manager
         // Find all PHP + Twig files in the app folder, except for storage
         $finder = new Finder();
         $finder->in($path)->exclude('storage')->exclude('vendor')->name('*.php')->name('*.twig')->name('*.vue')->files();
-        $counter = 0;
         /** @var \Symfony\Component\Finder\SplFileInfo $file */
         foreach ($finder as $file) {
 
@@ -229,13 +228,8 @@ class Manager
                          || Str::contains($key, ' ')) {
 
                         $stringKeys[$key] = $matches['default'][$index];
-                        $counter++;
                     }
                 }
-            }
-
-            if ($counter > 10) {
-                break;
             }
         }
 
