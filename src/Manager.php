@@ -175,7 +175,11 @@ class Manager
             "([.](?! )[^\1)]+)+".             // Be followed by one or more items/keys
             ')'.                                // Close group
             "[\'\"]".                           // Closing quote
-            "[\),]";                            // Close parentheses or new parameter
+            "(\)|,(\s*".                                       // Match opening parenthesis
+            "(?P<quote>['\"])".                            // Match " or ' and store in {quote}
+            "(?P<default>(?:\\\k{quote}|(?!\k{quote}).)*)". // Match any string that can be {quote} escaped
+            "\k{quote}".                                   // Match " or ' previously matched
+            "\s*)*(?:[\),]))";                                      // Close parentheses or new parameter\
 
         $stringPattern =
             "[^\w]".                                     // Must not have an alphanum before real method
@@ -184,24 +188,33 @@ class Manager
             "(?P<quote>['\"])".                            // Match " or ' and store in {quote}
             "(?P<string>(?:\\\k{quote}|(?!\k{quote}).)*)". // Match any string that can be {quote} escaped
             "\k{quote}".                                   // Match " or ' previously matched
-            "\s*[\),]";                                    // Close parentheses or new parameter
+            "\s*".                                    // Close parentheses or new parameter\
+            "(\)|,(\s*".                                       // Match opening parenthesis
+            "(?P<quotetwo>['\"])".                            // Match " or ' and store in {quote}
+            "(?P<default>(?:\\\k{quote}|(?!\k{quote}).)*)". // Match any string that can be {quote} escaped
+            "\k{quote}".                                   // Match " or ' previously matched
+            "\s*)*(?:[\),]))";                                    // Close parentheses or new parameter\
+
+
 
         // Find all PHP + Twig files in the app folder, except for storage
         $finder = new Finder();
         $finder->in($path)->exclude('storage')->exclude('vendor')->name('*.php')->name('*.twig')->name('*.vue')->files();
-
         /** @var \Symfony\Component\Finder\SplFileInfo $file */
         foreach ($finder as $file) {
+
             // Search the current file for the pattern
             if (preg_match_all("/$groupPattern/siU", $file->getContents(), $matches)) {
                 // Get all matches
-                foreach ($matches[2] as $key) {
-                    $groupKeys[] = $key;
+                foreach ($matches[2] as $index => $key) {
+                    $groupKeys[$key] = $matches['default'][$index];
                 }
             }
 
+
             if (preg_match_all("/$stringPattern/siU", $file->getContents(), $matches)) {
-                foreach ($matches['string'] as $key) {
+
+                foreach ($matches['string'] as $index => $key) {
                     if (preg_match("/(^[a-zA-Z0-9_-]+([.][^\1)\ ]+)+$)/siU", $key, $groupMatches)) {
                         // group{.group}.key format, already in $groupKeys but also matched here
                         // do nothing, it has to be treated as a group
@@ -213,40 +226,38 @@ class Manager
                     //space, which makes it JSON.
                     if (! (Str::contains($key, '::') && Str::contains($key, '.'))
                          || Str::contains($key, ' ')) {
-                        $stringKeys[] = $key;
+
+                        $stringKeys[$key] = $matches['default'][$index];
                     }
                 }
             }
         }
-        // Remove duplicates
-        $groupKeys = array_unique($groupKeys);
-        $stringKeys = array_unique($stringKeys);
 
         // Add the translations to the database, if not existing.
-        foreach ($groupKeys as $key) {
+        foreach ($groupKeys as $key => $value) {
             // Split the group and item
             list($group, $item) = explode('.', $key, 2);
-            $this->missingKey('', $group, $item);
+            $this->missingKey('', $group, $item, $value);
         }
 
-        foreach ($stringKeys as $key) {
+        foreach ($stringKeys as $key => $value) {
             $group = self::JSON_GROUP;
             $item = $key;
-            $this->missingKey('', $group, $item);
+            $this->missingKey('', $group, $item, $value);
         }
 
         // Return the number of found translations
         return count($groupKeys + $stringKeys);
     }
 
-    public function missingKey($namespace, $group, $key)
+    public function missingKey($namespace, $group, $key, $value = null)
     {
         if (! in_array($group, $this->config['exclude_groups'])) {
             Translation::firstOrCreate([
                 'locale' => $this->app['config']['app.locale'],
                 'group'  => $group,
-                'key'    => $key,
-            ]);
+                'key'    => $key
+            ], ['value' => $value]);
         }
     }
 
