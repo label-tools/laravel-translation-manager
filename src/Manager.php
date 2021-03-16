@@ -256,9 +256,8 @@ class Manager
             Translation::firstOrCreate([
                 'locale' => $this->app['config']['app.locale'],
                 'group'  => $group,
-                'key'    => $key,
-                'value' => $value
-            ]);
+                'key'    => $key
+            ], ['value' => $value]);
         }
     }
 
