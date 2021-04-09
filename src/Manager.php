@@ -207,10 +207,12 @@ class Manager
             if (preg_match_all("/$groupPattern/siU", $file->getContents(), $matches)) {
                 // Get all matches
                 foreach ($matches[2] as $index => $key) {
-                    $groupKeys[$key] = $matches['default'][$index];
+                    $groupKeys[$key] = [
+                        'value' => $matches['default'][$index],
+                        'allows_markdown' => $matches[1][$index] === '__markdown'
+                    ];
                 }
             }
-
 
             if (preg_match_all("/$stringPattern/siU", $file->getContents(), $matches)) {
 
@@ -227,7 +229,11 @@ class Manager
                     if (! (Str::contains($key, '::') && Str::contains($key, '.'))
                          || Str::contains($key, ' ')) {
 
-                        $stringKeys[$key] = $matches['default'][$index];
+
+                        $stringKeys[$key] = [
+                            'value' => $matches['default'][$index],
+                            'allows_markdown' => $matches[1][$index] === '__markdown'
+                        ];
                     }
                 }
             }
@@ -237,27 +243,27 @@ class Manager
         foreach ($groupKeys as $key => $value) {
             // Split the group and item
             list($group, $item) = explode('.', $key, 2);
-            $this->missingKey('', $group, $item, $value);
+            $this->missingKey('', $group, $item, $data);
         }
 
-        foreach ($stringKeys as $key => $value) {
+        foreach ($stringKeys as $key => $data) {
             $group = self::JSON_GROUP;
             $item = $key;
-            $this->missingKey('', $group, $item, $value);
+            $this->missingKey('', $group, $item, $data);
         }
 
         // Return the number of found translations
         return count($groupKeys + $stringKeys);
     }
 
-    public function missingKey($namespace, $group, $key, $value = null)
+    public function missingKey($namespace, $group, $key, array $data = [])
     {
         if (! in_array($group, $this->config['exclude_groups'])) {
             Translation::firstOrCreate([
                 'locale' => $this->app['config']['app.locale'],
                 'group'  => $group,
-                'key'    => $key
-            ], ['value' => $value]);
+                'key'    => $key,
+            ], $data);
         }
     }
 
