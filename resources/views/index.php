@@ -238,8 +238,9 @@
                 <?php foreach ($locales as $locale): ?>
                     <th><?= $locale ?></th>
                 <?php endforeach; ?>
+                <th>Markdown</th>
                 <?php if ($deleteEnabled): ?>
-                    <th>&nbsp;</th>
+                    <th>Delete</th>
                 <?php endif; ?>
             </tr>
             </thead>
@@ -259,9 +260,16 @@
                                data-url="<?php echo $editUrl ?>"
                                data-title="Enter translation"><?php echo $t ? htmlentities($t->value, ENT_QUOTES, 'UTF-8', false) : '' ?></a>
                         </td>
+                        <td style="text-align:center">
+                            <?php if(!empty($translation[$locale]['allows_markdown'])) : ?>
+                                    <span class="glyphicon glyphicon-ok"></span>
+                            <?php else: ?>
+                                --
+                            <?php endif;?>
+                        </td>
                     <?php endforeach; ?>
                     <?php if ($deleteEnabled): ?>
-                        <td>
+                        <td style="text-align:center">
                             <a href="<?php echo action('\Barryvdh\TranslationManager\Controller@postDelete', [$group, $key]) ?>"
                                class="delete-key"
                                data-confirm="Are you sure you want to delete the translations for '<?php echo htmlentities($key, ENT_QUOTES, 'UTF-8', false) ?>?"><span
