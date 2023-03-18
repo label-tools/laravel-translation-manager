@@ -166,6 +166,7 @@ class Manager
         $functions = $this->config['trans_functions'];
 
         $groupPattern =                          // See https://regex101.com/r/WEJqdL/6
+<<<<<<< HEAD
             "[^\w|>]".                          // Must not have an alphanum or _ or > before real method
             '('.implode('|', $functions).')'.  // Must start with one of the functions
             "\(".                               // Match opening parenthesis
@@ -180,6 +181,18 @@ class Manager
             "(?P<default>(?:\\\k{quote}|(?!\k{quote}).)*)". // Match any string that can be {quote} escaped
             "\k{quote}".                                   // Match " or ' previously matched
             "\s*)*(?:[\),]))";                                      // Close parentheses or new parameter\
+=======
+            "[^\w|>]" .                          // Must not have an alphanum or _ or > before real method
+            '(' . implode('|', $functions) . ')' .  // Must start with one of the functions
+            "\(" .                               // Match opening parenthesis
+            "[\'\"]" .                           // Match " or '
+            '(' .                                // Start a new group to match:
+            '[\/a-zA-Z0-9_-]+' .                 // Must start with group
+            "([.](?! )[^\1)]+)+" .               // Be followed by one or more items/keys
+            ')' .                                // Close group
+            "[\'\"]" .                           // Closing quote
+            "[\),]";                             // Close parentheses or new parameter
+>>>>>>> upstream/master
 
         $stringPattern =
             "[^\w]".                                     // Must not have an alphanum before real method
@@ -215,9 +228,14 @@ class Manager
             }
 
             if (preg_match_all("/$stringPattern/siU", $file->getContents(), $matches)) {
+<<<<<<< HEAD
 
                 foreach ($matches['string'] as $index => $key) {
                     if (preg_match("/(^[a-zA-Z0-9_-]+([.][^\1)\ ]+)+$)/siU", $key, $groupMatches)) {
+=======
+                foreach ($matches['string'] as $key) {
+                    if (preg_match("/(^[\/a-zA-Z0-9_-]+([.][^\1)\ ]+)+$)/siU", $key, $groupMatches)) {
+>>>>>>> upstream/master
                         // group{.group}.key format, already in $groupKeys but also matched here
                         // do nothing, it has to be treated as a group
                         continue;
@@ -269,6 +287,7 @@ class Manager
 
     public function exportTranslations($group = null, $json = false)
     {
+        $group = basename($group);
         $basePath = $this->app['path.lang'];
 
         if (! is_null($group) && ! $json) {
@@ -287,6 +306,7 @@ class Manager
                                                     ->get());
 
                 foreach ($tree as $locale => $groups) {
+                    $locale = basename($locale);
                     if (isset($groups[$group])) {
                         $translations = $groups[$group];
                         $path = $this->app['path.lang'];
@@ -309,7 +329,11 @@ class Manager
                             }
                         }
 
-                        $path = $path.DIRECTORY_SEPARATOR.$locale.DIRECTORY_SEPARATOR.$group.'.php';
+                        if ($vendor) {
+                            $path = $path.DIRECTORY_SEPARATOR.'messages.php';
+                        } else {
+                            $path = $path.DIRECTORY_SEPARATOR.$locale.DIRECTORY_SEPARATOR.$group.'.php';
+                        }
 
                         $output = "<?php\n\nreturn ".var_export($translations, true).';'.\PHP_EOL;
                         $this->files->put($path, $output);
@@ -410,7 +434,7 @@ class Manager
 
     public function addLocale($locale)
     {
-        $localeDir = $this->app->langPath().'/'.$locale;
+        $localeDir = $this->app->langPath().'/'.basename($locale);
 
         $this->ignoreLocales = array_diff($this->ignoreLocales, [$locale]);
         $this->saveIgnoredLocales();
